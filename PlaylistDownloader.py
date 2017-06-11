@@ -1,4 +1,19 @@
 
+"""
+This script takes songs-titles off of a pre-made list and fetches the youtube video and converts it to .mp3 format.
+
+Requirements:
+    sudo apt-get install lame
+    sudo apt-get install mplayer
+
+Python packages:
+    pip install BeautifulSoup
+    pip install pytube
+
+
+Dustin Roberts 6/11/17
+"""
+
 from subprocess import call     # for calling mplayer and lame
 from sys import argv            # allows user to specify input and output directories
 import os    
@@ -7,78 +22,35 @@ from pprint import pprint                   # help with file handling
 import urllib
 import urllib2
 from bs4 import BeautifulSoup
-
+import convert
 all_links = []
-
-
-
-
-def check_file_exists(directory, filename, extension):
-    path = directory + "/" + filename + extension
-    return os.path.isfile(path)
-
-def main(indir, outdir):
-
-
-    try:
-        # check specified folders exist
-        if not os.path.exists(indir):
-            exit("Error: Input directory \'" + indir + "\' does not exist. (try prepending './')")
-        if not os.path.exists(outdir):
-            exit("Error: Output directory \'" + outdir + "\' does not exist.")
-        if not os.access(outdir, os.W_OK):
-            exit("Error: Output directory \'" + outdir + "\' is not writeable.")
-
-        print "[%s/*.mp4] --> [%s/*.mp3]" % (indir, outdir)
-        files = [] # files for exporting
-            
-        # get a list of all convertible files in the input directory
-        filelist = [ f for f in os.listdir(indir) if f.endswith(".mp4") ]
-        for path in filelist:
-            basename = os.path.basename(path) 
-            filename = os.path.splitext(basename)[0]
-            files.append(filename)
-        # remove files that have already been outputted from the list
-        files[:] = [f for f in files if not check_file_exists(outdir, f, ".mp3")]
-    except OSError as e:
-        exit(e)
-    
-    if len(files) == 0:
-        exit("Could not find any files to convert that have not already been converted.")
-
-    # convert all unconverted files
-    for filename in files:
-        print "-- converting %s.mp4 to %s.mp3 --" % (indir + "/" + filename, outdir + "/" + filename)
-        call(["mplayer", "-novideo", "-nocorrect-pts", "-ao", "pcm:waveheader", indir + "/" + filename + ".mp4"])
-        call(["lame", "-h", "-b", "192", "audiodump.wav", outdir + "/" + filename + ".mp3"])
-        os.remove(filename + '.mp4')
-        os.remove("audiodump.wav")
-
-# set the default directories and try to get input directories
-args = [".", "."]
-for i in range(1, min(len(argv), 3)):
-    args[i - 1] = argv[i]
-
-# if only input directory is set, make the output directory the same
-if len(argv) == 2:
-    args[1] = args[0]
-
 
 
 
 
 #This is what goes through the list of songs I want and donwloads them to youtube
 def get_video():
-    b = [0,20,40,60]
+    b = [0,20,40, 60,80]
     for nums in b:
         try:
             link = str(x[nums])
             yt = YouTube(link)
-            yt.filter('mp4')[-1]
-            video = yt.get('mp4')
-            video.download('/home/main/Desktop/Youtube/'+'{}'.format(nums))
-            print'finished loop {}'.format(nums)
+            try:
+                print(yt.filter('mp4')[-1])
+                video = yt.get('mp4', '360p')
+                video.download('/home/main/Desktop/Youtube/'+'{}'.format(nums) + '.mp4')
+                print'finished loop {}'.format(nums)
+            except:
+                try:
+                    print(yt.filter('mp4')[-1])                 
+                    video = yt.get('3gp', '144p')
+                    video.download('/home/main/Desktop/Youtube/'+'{}'.format(nums) + '.mp4')
+                    print'finished loop {}'.format(nums)
+                except:
+                    print'couldnt download anything'
+
         except:
+            print'failed'
             continue
 x  = list()
 
@@ -98,7 +70,7 @@ def get_link(song_list):
 
 
 if __name__=='__main__':
-    get_link(['handmouth sedona lyrics', 'milo pizza party', 'waving flags lyrics'])
+    get_link([ 'milo pizza party', 'waving flags lyrics', 'back in black lyrics','mr jones', 'peach plumb pear jonna newsome'])
     get_video()
    # get_video()
-    #main(args[0], args[1])
+    convert.convert('/home/main/Desktop/Youtube')
